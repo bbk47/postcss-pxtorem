@@ -182,16 +182,18 @@ describe("rootValue", function() {
         return 20;
       }
     };
-    var processed1 = postcss(pxtorem(options)).process(basicCSS, {
+    var instance = postcss(pxtorem(options));
+    var processed1 = instance.process(basicCSS, {
       from: "/tmp/basic.css"
     }).css;
-    var processed2 = postcss(pxtorem(options)).process(css2, {
+    var processed2 = instance.process(css2, {
       from: "/tmp/whatever.css"
     }).css;
 
     expect(processed1).toBe(expected);
     expect(processed2).toBe(expected);
   });
+
 });
 
 describe("unitPrecision", function() {
