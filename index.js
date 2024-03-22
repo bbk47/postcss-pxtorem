@@ -116,25 +116,25 @@ function createPropListMatcher(propList) {
   };
 }
 
-function getPxReplacer(opts, input){
+let cached = {};
+function getPxReplacer(opts, input) {
+  if (cached[input.file]) return cached[input.file];
   let val = opts.rootValue;
-  if(typeof val==='function'){
+  if (typeof val === "function") {
     val = val(input);
   }
-  return createPxReplace(
-    val,
-    opts.unitPrecision,
-    opts.minPixelValue
-  );
+  const replacer = createPxReplace(val, opts.unitPrecision, opts.minPixelValue);
+  cached[input.file] = replacer;
+  return replacer;
 }
 
 module.exports = (options = {}) => {
+  cached = {};
   convertLegacyOptions(options);
   const opts = Object.assign({}, defaults, options);
   const satisfyPropList = createPropListMatcher(opts.propList);
   const exclude = opts.exclude;
   let isExcludeFile = false;
-  let allwayOneReplacer;
   return {
     postcssPlugin: "postcss-pxtorem",
     Once(css) {
@@ -154,7 +154,6 @@ module.exports = (options = {}) => {
       if(typeof opts.rootValue==='function'){
         return;
       }
-      allwayOneReplacer =getPxReplacer(opts,css.source.input.file)
     },
     Declaration(decl) {
       if (isExcludeFile) return;
@@ -165,10 +164,7 @@ module.exports = (options = {}) => {
         blacklistedSelector(opts.selectorBlackList, decl.parent.selector)
       )
         return;
-        let pxReplace2=allwayOneReplacer;
-        if(!pxReplace2){
-          pxReplace2 = getPxReplacer(opts,decl.source.input,options.rootValue);
-        }
+      let pxReplace2 = getPxReplacer(opts, decl.source.input, options.rootValue);
       const value = decl.value.replace(pxRegex, pxReplace2);
 
       // if rem unit already exists, do not add or replace
@@ -185,10 +181,7 @@ module.exports = (options = {}) => {
       // console.log(atRule.source.input);
       if (opts.mediaQuery && atRule.name === "media") {
         if (atRule.params.indexOf("px") === -1) return;
-        let pxReplace2=allwayOneReplacer;
-        if(!pxReplace2){
-            pxReplace2 = getPxReplacer(opts,atRule.source.input,options.rootValue);
-        }
+        let pxReplace2 = getPxReplacer(opts, atRule.source.input, options.rootValue);
         atRule.params = atRule.params.replace(pxRegex, pxReplace2);
       }
     }
